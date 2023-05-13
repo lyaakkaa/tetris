@@ -5,10 +5,11 @@ db = psycopg2.connect(**params)
 cursor = db.cursor()
 
 
-cursor.execute('''CREATE TABLE tetris(
-    username VARCHAR(255),
-    high_score INT NOT NULL,
-);''')
+cursor.execute('''CREATE TABLE scores(
+     username   VARCHAR(255),
+     record INT NOT NULL,
+     latest_score INT NOT NULL
+)''')
 
 # drop_table = '''DROP TABLE snake'''
 # cursor.execute(drop_table)

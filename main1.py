@@ -73,23 +73,69 @@ scores = {0: 0, 1: 100, 2: 300, 3: 700, 4: 1500}
 
 
 
+insert_int = '''
+        INSERT INTO scores (username, record, latest_score) VALUES (%s, %s, %s)
+    '''
 
-
-
-
-def get_record():
+def get_record(username):
     try:
-        with open('record') as f:
-            return f.readline()
-    except FileNotFoundError:
-        with open('record', 'w') as f:
-            f.write('0')
+        cursor.execute("SELECT record FROM scores WHERE username = %s", (username,))
+        output = cursor.fetchone()
+        if output is not None:
+            return output[0]
+        else:
+            cursor.execute(insert_int, (username, 0, 0))
+            db.commit()
+            return 0
+    except Exception as e:
+        print(f"An error occurred while retrieving record for {username}: {e}")
+        return 0
 
 
-def set_record(record, score):
-    rec = max(int(record), score)
-    with open('record', 'w') as f:
-        f.write(str(rec))
+def set_record(username, score):
+    try:
+        cursor.execute("SELECT record FROM scores WHERE username = %s", (username,))
+        output = cursor.fetchone()
+        if output is not None:
+            record = output[0]
+            if score > record:
+                cursor.execute("UPDATE scores SET record = %s WHERE username = %s", (score, username))
+                db.commit()
+        else:
+            cursor.execute(insert_int, (username, 0, 0))
+            db.commit()
+    except Exception as e:
+        print(f"An error occurred while setting record for {username}: {e}")
+
+
+def get_last_score(username):
+    try:
+        cursor.execute("SELECT latest_score FROM scores WHERE username = %s", (username,))
+        output = cursor.fetchone()
+        if output is not None:
+            return output[0]
+        else:
+            cursor.execute(insert_int, (username, 0, 0))
+            db.commit()
+            return 0
+    except Exception as e:
+        print(f"An error occurred while retrieving latest score for {username}: {e}")
+        return 0
+
+
+def set_last_score(username, score):
+    try:
+        cursor.execute("SELECT latest_score FROM scores WHERE username = %s", (username,))
+        output = cursor.fetchone()
+        if output is not None:
+            cursor.execute("UPDATE scores SET latest_score = %s WHERE username = %s", (score, username))
+            db.commit()
+        else:
+            cursor.execute(insert_int, (username, 0, 0))
+            db.commit()
+    except Exception as e:
+        print(f"An error occurred while setting latest score for {username}: {e}")
+
 
 
 
@@ -102,21 +148,25 @@ while menu:
         elif figure[i].y > HEIGHT - 1 or field[figure[i].y][figure[i].x]:
             return False
         return True
+    
+
     while True:
-        last_score = score
+        last_score = get_last_score(username)
+    
         play = False
+        leaderboard = False
         sc.fill('red')
         MENU_MOUSE_POS = pygame.mouse.get_pos()
       
         PLAY_BUTTON = Button(image=pygame.image.load("assets/Play Rect.png"), pos=(380, 250), 
                             text_input="PLAY", font=get_font(25), base_color="#d7fcd4", hovering_color="White")
         OPTIONS_BUTTON = Button(image=pygame.image.load("assets/Options Rect.png"), pos=(380, 400), 
-                            text_input="OPTIONS", font=get_font(25), base_color="#d7fcd4", hovering_color="White")
+                            text_input="LEADERBOARD", font=get_font(25), base_color="#d7fcd4", hovering_color="White")
         QUIT_BUTTON = Button(image=pygame.image.load("assets/Quit Rect.png"), pos=(380, 550), 
                             text_input="QUIT", font=get_font(25), base_color="#d7fcd4", hovering_color="White")
-        LAST_SCORE_TEXT = font.render(f'your last score: {last_score}', True, "white")
+        LAST_SCORE_TEXT = font.render(f'your last score: {get_last_score(username)}', True, "white")
         sc.blit(LAST_SCORE_TEXT, (150, -10))
-        RECORD_TEXT = font.render(f'your record: {get_record()}', True, "black")
+        RECORD_TEXT = font.render(f'your record: {get_record(username)}', True, "black")
         sc.blit(RECORD_TEXT, (150, 60))
  
         for button in [PLAY_BUTTON, OPTIONS_BUTTON, QUIT_BUTTON]:
@@ -133,15 +183,16 @@ while menu:
                     play = True
                     
                 if OPTIONS_BUTTON.checkForInput(MENU_MOUSE_POS):
-                    print('options')
+                    leaderboard = True
                 if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):
                     pygame.quit()
                     sys.exit()
                 pass
         
         while play:
+            set_record(username, score)
+            record = str(get_record(username))
             sound.play()
-            record = get_record()
             dx, rotate = 0, False
             sc.blit(bg, (0, 0))
             sc.blit(game_sc, (20, 20))
@@ -220,7 +271,7 @@ while menu:
 
             # compute score
             score += scores[lines]
-            last_score = score
+            set_last_score(username, score)
 
 
             # draw grid
@@ -259,7 +310,7 @@ while menu:
             #game over
             for i in range(WIDTH):
                 if field[0][i]:
-                    set_record(record, score)
+                    set_record(username, score)
                     sound.stop()
                     sound_game_over.play()
                     play = False
@@ -274,6 +325,38 @@ while menu:
             pygame.display.update()
             pygame.display.flip()
             clock.tick(fps)
+
+        while leaderboard:
+            sc.fill('blue')
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit()
+                if event.type == pygame.KEYDOWN: 
+                    if event.key == pygame.K_LEFT:
+                        leaderboard = False
+
+            cursor.execute("SELECT username, record FROM scores ORDER BY record DESC")
+            results = cursor.fetchall()
+            
+            crown_img = pygame.image.load('assets\crown.png')
+            sc.blit(crown_img, (100, 60))
+
+            title_text = font.render('Leaderboard', True, pygame.Color('black'))
+            sc.blit(title_text, (200, 70))
+            y = 200
+            for result in results:
+                username = result[0]
+                record = str(result[1])
+                text = font.render(f"{username}: {record}", True, pygame.Color('black'))
+                sc.blit(text, (100, y))
+                y += 50
+                
+
+            pygame.display.update()
+            pygame.display.flip()
+            clock.tick(fps)
+
 
         pygame.display.update()
 

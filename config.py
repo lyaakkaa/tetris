@@ -1,7 +1,7 @@
 params = {
     'host' : "localhost",
-    'database' : 'postgres',
+    'database' : 'tetris_db',
     'user' : 'postgres',
-    'password' : '*****'
+    'password' : 'dimash7628'
 
 }
