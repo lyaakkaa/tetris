@@ -3,6 +3,7 @@
 The game is a version of the classic Tetris game. The player controls the falling tiles, which must be placed so as to fill the horizontal rows. If the row is full, it is deleted and all remaining tiles are shifted down. The goal of the game is to score the maximum number of points.
 
 The game implements the control of falling tiles using the arrows on the keyboard. The tile rotation function is also implemented using the "up" key.
+You can also increase the tile speed by pressing the "down" key
 
 There are different types of tiles in the game that fall randomly. Each tile consists of four squares arranged in different combinations. Tile types: L-tile, Z-tile, I-tile, T-tile, O-tile and J-tile.
 
@@ -12,6 +13,7 @@ The player loses if at least one tile reaches the upper edge of the playing fiel
 
 
 The game has a menu where the player can start a new game. The game also has a soundtrack, including background music.
+
 
 An important feature of the game is the ability to save the player's results even after the game is closed. This means that if a player reaches a new record, his result will be saved and available to him the next time he starts the game.
 
